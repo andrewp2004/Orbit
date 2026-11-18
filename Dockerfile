@@ -11,6 +11,6 @@ ENV NODE_ENV=production PORT=3000 DB_FILE=/data/orbit.sqlite
 COPY package*.json ./
 RUN npm ci --omit=dev
 COPY --from=build /app/dist ./dist
-VOLUME /data
+RUN mkdir -p /app/data /data
 EXPOSE 3000
 CMD ["node", "--no-warnings", "dist/server/index.js"]
