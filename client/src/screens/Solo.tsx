@@ -9,7 +9,7 @@ const DIFFS: { id: Difficulty; name: string; desc: string }[] = [
 ];
 
 export function Solo(props: { onBack: () => void; onStart: (d: Difficulty, size: ArenaSize) => void }) {
-  const [diff, setDiff] = useState<Difficulty>(() => (localStorage.getItem('orbit.diff') as Difficulty) || 'normal');
+  const [diff, setDiff] = useState<Difficulty>(() => { try { return (localStorage.getItem('orbit.diff') as Difficulty) || 'normal'; } catch { return 'normal'; } });
   const [size, setSize] = useState<ArenaSize>('medium');
   return (
     <Panel title="Play Solo" onBack={props.onBack}>

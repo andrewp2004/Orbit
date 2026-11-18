@@ -59,7 +59,10 @@ export function offlineProfile(): Profile {
 }
 
 /** Restores the session or creates a guest account. Returns null profile on network failure. */
+export const STANDALONE = import.meta.env.VITE_STANDALONE === '1';
+
 export async function bootstrap(): Promise<{ profile: Profile; online: boolean }> {
+  if (STANDALONE) return { profile: offlineProfile(), online: false };
   try {
     if (getToken()) {
       try {

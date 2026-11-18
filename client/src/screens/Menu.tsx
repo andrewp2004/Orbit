@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { Profile } from '../api';
+import { STANDALONE, type Profile } from '../api';
 import { colorHex, levelForXp, xpForLevel } from '../../../shared/cosmetics';
 import { Btn, PlanetPreview } from '../ui';
 import type { ConnStatus } from '../net';
@@ -35,7 +35,7 @@ export function Menu(props: { profile: Profile; online: boolean; conn: ConnStatu
           <Btn variant="ghost" onClick={() => props.onNav('leaderboard')} disabled={!props.online}>Leaderboards</Btn>
           <Btn variant="ghost" onClick={() => props.onNav('settings')}>Settings</Btn>
         </div>
-        {!props.online && <div className="notice">Offline: solo play is available. Online features return when the server is reachable.</div>}
+        {!props.online && <div className="notice">{STANDALONE ? 'This preview has solo play. Playing with friends, accounts and leaderboards need the ORBIT game server to be running online.' : 'Offline: solo play is available. Online features return when the server is reachable.'}</div>}
       </div>
 
       <div className="profile-card" onClick={() => !editing && props.onNav('profile')} role="button" tabIndex={0}>
@@ -62,9 +62,9 @@ export function Menu(props: { profile: Profile; online: boolean; conn: ConnStatu
         </div>
       </div>
 
-      <div className={`conn conn-${props.online ? props.conn : 'offline'}`}>
+      {!STANDALONE && <div className={`conn conn-${props.online ? props.conn : 'offline'}`}>
         <span className="conn-dot" /> {props.online ? 'Server online' : 'Offline mode'}
-      </div>
+      </div>}
       <div className="controls-hint">WASD move · Mouse aim · Left click Attract · Right click Repel · Space Dash</div>
     </div>
   );
