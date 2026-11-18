@@ -5,7 +5,7 @@ import type { Socket } from 'socket.io-client';
 import { DEFAULT_SETTINGS, Difficulty, MatchSettings, SIM_DT, PLANET_COLORS, radiusForMass, START_MASS } from '../../../shared/constants';
 import { CATALOG, Cosmetics, colorHex } from '../../../shared/cosmetics';
 import { World, GameEvent, MatchResult, PlayerInput, Phase, SpaceEventKind, BlackHole, integrateMovement, applyBlackHoles, dashImpulse } from '../../../shared/sim';
-import { botBrain, BOT_NAMES } from '../../../shared/ai';
+import { addBots } from '../../../shared/ai';
 import { F_ALIVE, F_CONNECTED, F_DASHING, F_PROTECTED, FullSync, MatchEndPayload, Snapshot, OrbTuple } from '../../../shared/protocol';
 
 export interface RPlayer {
@@ -72,19 +72,8 @@ export class LocalSession implements Session {
   constructor(name: string, cosmetics: Cosmetics, difficulty: Difficulty, settings: Partial<MatchSettings> = {}) {
     this.difficulty = difficulty;
     this.world = new World({ ...DEFAULT_SETTINGS, durationSec: 300, ...settings });
-    this.world.brain = botBrain;
     this.me = this.world.addPlayer({ name, cosmetics }).id;
-    const names = [...BOT_NAMES].sort(() => Math.random() - 0.5);
-    const skins = CATALOG.filter((c) => c.slot === 'skin').map((c) => c.id);
-    const glows = ['glow-soft', 'glow-soft', 'glow-pulse', 'glow-halo'];
-    const myColor = colorHex(cosmetics);
-    const colors = PLANET_COLORS.map((_, i) => `c${i}`).filter((c) => colorHex({ ...cosmetics, color: c }) !== myColor);
-    for (let i = 0; i < 10; i++) {
-      this.world.addPlayer({
-        name: names[i], isBot: true, difficulty,
-        cosmetics: { color: colors[i % colors.length], skin: skins[Math.floor(Math.random() * skins.length)], glow: glows[i % glows.length], trail: Math.random() < 0.5 ? 'trail-comet' : 'trail-sparkle', elimFx: 'fx-burst' },
-      });
-    }
+    addBots(this.world, 10, difficulty);
     this.world.start();
   }
 

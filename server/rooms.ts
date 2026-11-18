@@ -1,9 +1,10 @@
 // Private multiplayer rooms with an authoritative game loop.
 import type { Server, Socket } from 'socket.io';
 import { randomBytes } from 'node:crypto';
-import { MatchSettings, PLANET_COLORS, SERVER_TICK_MS, SIM_DT, sanitizeSettings } from '../shared/constants';
+import { MAX_MATCH_PLAYERS, MatchSettings, PLANET_COLORS, SERVER_TICK_MS, SIM_DT, sanitizeSettings } from '../shared/constants';
 import { Cosmetics, colorHex, levelForXp } from '../shared/cosmetics';
 import { World } from '../shared/sim';
+import { addBots } from '../shared/ai';
 import {
   LobbyState, MatchEndPayload, RoomJoinAck, RosterEntry, buildFullSync, buildSnapshot,
 } from '../shared/protocol';
@@ -342,6 +343,12 @@ export class RoomManager {
     for (const m of players) {
       m.playerId = world.addPlayer({ name: m.name, cosmetics: m.cosmetics }).id;
     }
+    const humans = world.players.length;
+    const bots = Math.min(room.settings.bots, MAX_MATCH_PLAYERS - humans);
+    if (bots > 0) {
+      addBots(world, bots, room.settings.botDifficulty, { tag: true });
+      world.endWhenNoHumans = true;
+    }
     world.start();
     world.orbAdded = [];
     world.orbRemoved = [];
@@ -376,7 +383,12 @@ export class RoomManager {
       const m = byPlayer.get(r.id);
       if (m) {
         // Results are computed by the server simulation, never reported by clients.
-        const rec = this.store.recordResult(m.userId, { mode: 'online', score: r.score, kills: r.kills, won: r.won, placement: r.placement, players: results.length });
+        // Matches that included bots go to the Solo boards so the Online boards stay human-vs-human.
+        const hadBots = world.players.some((p) => p.isBot);
+        const rec = this.store.recordResult(m.userId, {
+          mode: hadBots ? 'solo' : 'online', score: r.score, kills: r.kills, won: r.won, placement: r.placement, players: results.length,
+          difficulty: hadBots ? room.settings.botDifficulty : undefined,
+        });
         xp[m.memberId] = { gained: rec.gained, total: rec.total, level: rec.level };
         m.level = levelForXp(rec.total);
       }

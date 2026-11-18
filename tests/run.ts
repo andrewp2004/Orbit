@@ -178,6 +178,37 @@ await test('friends leaderboard', async () => {
   assert.deepEqual(lb.rows.map((x: any) => x.name), ['alice_pro']);
 });
 
+await test('host can fill the room with labeled bots that actually play', async () => {
+  const ack = await emitAck<any>(sa, 'room:create', { arenaSize: 'small', bots: 5, botDifficulty: 'hard' });
+  assert.ok(ack.ok);
+  assert.equal(ack.lobby.settings.bots, 5);
+  const full = once<any>(sa, 'match:full');
+  sa.emit('room:start');
+  const f = await full;
+  assert.equal(f.roster.length, 6);
+  assert.equal(f.roster.filter((r: any) => r.name.endsWith('[BOT]')).length, 5);
+  const botIds = f.roster.filter((r: any) => r.name.endsWith('[BOT]')).map((r: any) => r.id);
+  const start = new Map(f.p.map((p: number[]) => [p[0], [p[1], p[2]]]));
+  await sleep(5000);
+  const snap = await once<any>(sa, 'snap');
+  const moved = snap.p.filter((p: number[]) => botIds.includes(p[0]) && Math.hypot(p[1] - (start.get(p[0]) as number[])[0], p[2] - (start.get(p[0]) as number[])[1]) > 50);
+  assert.ok(moved.length >= 4, `only ${moved.length} bots moved`);
+  // When the only human leaves, the match ends instead of running on with bots alone.
+  sa.emit('room:leave');
+});
+
+await test('bot count is capped at 15 and only the host can change it', async () => {
+  const ack = await emitAck<any>(sa, 'room:create', { bots: 99 });
+  assert.equal(ack.lobby.settings.bots, 15);
+  const j = await emitAck<any>(sc, 'room:join', { code: ack.code });
+  assert.ok(j.ok);
+  sc.emit('room:settings', { bots: 0 });
+  await sleep(300);
+  const l = await new Promise<any>((r) => { sa.once('lobby', r); sa.emit('room:settings', { botDifficulty: 'easy' }); });
+  assert.equal(l.settings.bots, 15);
+  assert.equal(l.settings.botDifficulty, 'easy');
+});
+
 sa!.close(); sb!.close(); sc!.close();
 server.kill();
 console.log(failed ? '\nSOME TESTS FAILED' : '\nAll tests passed');

@@ -1,6 +1,27 @@
 // Computer-controlled opponents (single-player only - online rooms never contain bots).
-import { Difficulty, abilityRange, radiusForMass, CONSUME_RATIO } from './constants';
+import { Difficulty, abilityRange, radiusForMass, CONSUME_RATIO, PLANET_COLORS } from './constants';
+import { CATALOG } from './cosmetics';
 import type { Player, World } from './sim';
+
+/** Adds AI planets with varied looks, avoiding colors already in use. Names are tagged so they read as bots. */
+export function addBots(world: World, count: number, difficulty: Difficulty, opts: { tag?: boolean } = {}): void {
+  if (count <= 0) return;
+  world.brain = botBrain;
+  const names = [...BOT_NAMES].sort(() => Math.random() - 0.5);
+  const skins = CATALOG.filter((c) => c.slot === 'skin').map((c) => c.id);
+  const glows = ['glow-soft', 'glow-soft', 'glow-pulse', 'glow-halo'];
+  const used = new Set(world.players.map((p) => p.cosmetics.color));
+  const all = PLANET_COLORS.map((_, i) => `c${i}`);
+  const colors = [...all.filter((c) => !used.has(c)), ...all.filter((c) => used.has(c))];
+  for (let i = 0; i < count; i++) {
+    world.addPlayer({
+      name: opts.tag ? `${names[i % names.length]} [BOT]` : names[i % names.length],
+      isBot: true,
+      difficulty,
+      cosmetics: { color: colors[i % colors.length], skin: skins[Math.floor(Math.random() * skins.length)], glow: glows[i % glows.length], trail: Math.random() < 0.5 ? 'trail-comet' : 'trail-sparkle', elimFx: 'fx-burst' },
+    });
+  }
+}
 
 interface Profile {
   reaction: number; // seconds between decisions

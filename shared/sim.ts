@@ -190,6 +190,8 @@ export class World {
   initialPlayers = 0;
   brain: Brain | null = null;
   trackOrbDeltas = false;
+  /** Online rooms with bots: finish once no human planet is left alive. */
+  endWhenNoHumans = false;
   private nextId = 1;
   private nextSpaceEvent = 50;
   private nextEscalation = 75;
@@ -638,6 +640,7 @@ export class World {
   private checkEnd(): void {
     const alive = this.players.filter((p) => p.alive);
     const lastStanding = this.initialPlayers >= 2 ? alive.length <= 1 : alive.length === 0;
+    if (this.endWhenNoHumans && !alive.some((p) => !p.isBot)) { this.endMatch(); return; }
     if (lastStanding || this.time >= this.settings.durationSec) this.endMatch();
   }
 

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { DEFAULT_SETTINGS, MatchSettings, ArenaSize, HazardLevel } from '../../../shared/constants';
+import { DEFAULT_SETTINGS, MatchSettings, ArenaSize, HazardLevel, Difficulty, MAX_MATCH_PLAYERS } from '../../../shared/constants';
 import type { LobbyState } from '../../../shared/protocol';
 import { Btn, Dot, Panel, PlanetPreview } from '../ui';
 import { getSocket } from '../net';
 
-export function SettingsEditor({ value, onChange, disabled }: { value: MatchSettings; onChange: (s: MatchSettings) => void; disabled?: boolean }) {
+export function SettingsEditor({ value, onChange, disabled, humans = 1 }: { value: MatchSettings; onChange: (s: MatchSettings) => void; disabled?: boolean; humans?: number }) {
+  const maxBots = Math.max(0, Math.min(15, MAX_MATCH_PLAYERS - humans));
   const set = (patch: Partial<MatchSettings>) => onChange({ ...value, ...patch });
   return (
     <div className={`settings-editor ${disabled ? 'readonly' : ''}`}>
@@ -36,6 +37,30 @@ export function SettingsEditor({ value, onChange, disabled }: { value: MatchSett
         <span>Max players: {value.maxPlayers}</span>
         <input type="range" min={2} max={16} value={value.maxPlayers} disabled={disabled} onChange={(e) => set({ maxPlayers: Number(e.target.value) })} />
       </label>
+      <div className="bots-box">
+        <label className="field toggle">
+          <span>Fill with bots</span>
+          <button className={`switch ${value.bots > 0 ? 'on' : ''}`} disabled={disabled} data-testid="bots-toggle"
+            onClick={() => set({ bots: value.bots > 0 ? 0 : Math.min(maxBots, Math.max(2, 8 - humans)) })}><i /></button>
+        </label>
+        {value.bots > 0 && (
+          <>
+            <label className="field">
+              <span>Bots: {Math.min(value.bots, maxBots)} <span className="muted small">(match total {humans + Math.min(value.bots, maxBots)} planets)</span></span>
+              <input type="range" min={1} max={Math.max(1, maxBots)} value={Math.min(value.bots, maxBots)} disabled={disabled} onChange={(e) => set({ bots: Number(e.target.value) })} />
+            </label>
+            <label className="field">
+              <span>Bot difficulty</span>
+              <div className="seg">
+                {(['easy', 'normal', 'hard'] as Difficulty[]).map((d) => (
+                  <button key={d} disabled={disabled} className={value.botDifficulty === d ? 'active' : ''} onClick={() => set({ botDifficulty: d })}>{d}</button>
+                ))}
+              </div>
+            </label>
+            <p className="muted small">Bots are labeled [BOT] in game. Matches with bots count toward the Solo leaderboard.</p>
+          </>
+        )}
+      </div>
       <label className="field toggle">
         <span>Random space events</span>
         <button className={`switch ${value.events ? 'on' : ''}`} disabled={disabled} onClick={() => set({ events: !value.events })}><i /></button>
@@ -87,6 +112,7 @@ export function Lobby(props: { lobby: LobbyState; memberId: string; onLeave: () 
   };
   const link = `${location.origin}/?room=${lobby.code}`;
   const connected = lobby.members.filter((m) => m.connected).length;
+  const botsInMatch = Math.min(lobby.settings.bots, MAX_MATCH_PLAYERS - connected);
   return (
     <Panel title="Room Lobby" onBack={props.onLeave} wide right={<span className="muted small">{lobby.members.length}/{lobby.settings.maxPlayers} players</span>}>
       <div className="lobby-layout">
@@ -110,11 +136,19 @@ export function Lobby(props: { lobby: LobbyState; memberId: string; onLeave: () 
                 {!m.connected && <span className="badge warn">reconnecting…</span>}
               </li>
             ))}
+            {botsInMatch > 0 && (
+              <li className="bot-row">
+                <span className="bot-icon">🤖</span>
+                <span className="mname">+ {botsInMatch} bot{botsInMatch > 1 ? 's' : ''}</span>
+                <span className="muted small">{lobby.settings.botDifficulty}</span>
+                <span className="badge">BOT</span>
+              </li>
+            )}
           </ul>
         </div>
         <div className="lobby-right">
           <h3>Match settings {isHost ? '' : <span className="muted small">(host decides)</span>}</h3>
-          <SettingsEditor value={lobby.settings} disabled={!isHost} onChange={(s) => getSocket().emit('room:settings', s)} />
+          <SettingsEditor value={lobby.settings} disabled={!isHost} humans={lobby.members.length} onChange={(s) => getSocket().emit('room:settings', s)} />
           {lobby.state === 'playing' && (
             <div className="notice">
               A match is in progress. New arrivals spectate and join the next match.
@@ -123,7 +157,9 @@ export function Lobby(props: { lobby: LobbyState; memberId: string; onLeave: () 
           )}
           {isHost ? (
             <Btn className="big" disabled={lobby.state === 'playing'} onClick={() => getSocket().emit('room:start')}>
-              {connected < 2 ? 'Start (waiting for friends…)' : `Start Match (${connected} players)`}
+              {botsInMatch > 0
+                ? `Start Match (${connected} player${connected > 1 ? 's' : ''} + ${botsInMatch} bots)`
+                : connected < 2 ? 'Start (waiting for friends…)' : `Start Match (${connected} players)`}
             </Btn>
           ) : (
             <div className="waiting">Waiting for the host to start…</div>

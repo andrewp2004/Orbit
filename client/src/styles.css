@@ -298,3 +298,9 @@ table.lb .val { font-family: var(--font-display); font-weight: 700; }
   .spectating { bottom: 64px; }
   .warning { bottom: 64px; }
 }
+
+.bots-box { border: 1px solid var(--line); border-radius: 14px; padding: 2px 14px; background: rgba(255, 255, 255, 0.02); }
+.bots-box p { margin: 0 0 12px; }
+.bot-row { border-style: dashed !important; border-color: var(--line) !important; padding: 8px 12px !important; }
+.bot-icon { width: 44px; text-align: center; font-size: 22px; }
+.badge:not(.host):not(.warn) { background: rgba(160, 123, 255, 0.15); color: #c9b6ff; }

@@ -51,6 +51,8 @@ export interface MatchSettings {
   hazards: HazardLevel;
   maxPlayers: number; // 2..16
   events: boolean; // random space events
+  bots: number; // AI planets added by the host (0 = humans only)
+  botDifficulty: Difficulty;
 }
 
 export const DEFAULT_SETTINGS: MatchSettings = {
@@ -59,7 +61,11 @@ export const DEFAULT_SETTINGS: MatchSettings = {
   hazards: 'normal',
   maxPlayers: 12,
   events: true,
+  bots: 0,
+  botDifficulty: 'normal',
 };
+
+export const MAX_MATCH_PLAYERS = 16;
 
 export function sanitizeSettings(s: Partial<MatchSettings> | undefined): MatchSettings {
   const out = { ...DEFAULT_SETTINGS };
@@ -69,6 +75,8 @@ export function sanitizeSettings(s: Partial<MatchSettings> | undefined): MatchSe
   if (typeof s.durationSec === 'number' && isFinite(s.durationSec)) out.durationSec = Math.round(Math.min(420, Math.max(180, s.durationSec)));
   if (typeof s.maxPlayers === 'number' && isFinite(s.maxPlayers)) out.maxPlayers = Math.round(Math.min(16, Math.max(2, s.maxPlayers)));
   if (typeof s.events === 'boolean') out.events = s.events;
+  if (typeof s.bots === 'number' && isFinite(s.bots)) out.bots = Math.round(Math.min(15, Math.max(0, s.bots)));
+  if (s.botDifficulty === 'easy' || s.botDifficulty === 'normal' || s.botDifficulty === 'hard') out.botDifficulty = s.botDifficulty;
   return out;
 }
 
