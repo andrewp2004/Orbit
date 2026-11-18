@@ -1,0 +1,38 @@
+{
+  "name": "orbit-gravity-wars",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "ORBIT: Gravity Wars - real-time multiplayer gravity arena game",
+  "scripts": {
+    "dev": "concurrently -k -n server,client \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "tsx watch server/index.ts",
+    "dev:client": "vite",
+    "build": "vite build && esbuild server/index.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/server/index.js",
+    "start": "node --no-warnings dist/server/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "node --no-warnings --import tsx tests/run.ts"
+  },
+  "engines": {
+    "node": ">=22.5"
+  },
+  "dependencies": {
+    "express": "^4.22.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "socket.io": "^4.8.4",
+    "socket.io-client": "^4.8.4"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.25",
+    "@types/node": "^22.20.5",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "concurrently": "^10.0.7",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.21"
+  }
+}
